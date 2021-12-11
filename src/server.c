@@ -1,6 +1,6 @@
 #include "server.h"
 
-task_node task_node_init(void)
+void task_node_init(void)
 {
     head = (task_node)malloc(sizeof(struct TASK_NODE));
     head->connfd = 0;
@@ -10,7 +10,7 @@ task_node task_node_init(void)
 void add_task_node(int connfd)
 {
     // Allocate memory for new task. 
-    task_node temp head->next;
+    task_node temp = head->next;
     task_node new_node = (task_node)malloc(sizeof(struct TASK_NODE));
 
     // Link with head and increase num_task. 
@@ -27,7 +27,7 @@ int pop_task_node(void)
     int connfd;
     if (head->next == NULL) {
         // There is no task to pop. 
-        return NULL;
+        return -1;
     }
     task_node target_node = head->next;
     head->next = target_node->next;
@@ -37,20 +37,6 @@ int pop_task_node(void)
     return connfd;
 }
 
-void* thread_start(void* arg)
-{
-    int connfd;
-    pthread_mutex_lock(&mutex_task);
-    while(num_task == 0){
-        pthread_cond_wait(&cond_task, &mutex_task);
-    }
-    connfd = pop_task_node();
-    pthread_mutex_unlock(&mutex_task);
-    /*
-    * Execute server io function. 
-    */
-    run_cli(connfd);
-}
 
 void* listen_start(void* arg)
 {
@@ -59,7 +45,7 @@ void* listen_start(void* arg)
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
     fd_set reads, cpy_reads;
-    int fd_max, fd_num, buf_len;
+    int fd_max, fd_num;// buf_len;
 
     FD_ZERO(&reads);
     FD_SET(listenfd, &reads);
@@ -111,10 +97,19 @@ void run_cli(int connfd)
     Rio_readlineb(&rio, buf, MAXLINE);
     while(my_strlen(&buf[0])){
         sscanf(buf, "%d %x %s", total_length, msg_type, paylord);
-        if ((cmd = my_strtok_word(line))){
+        if ((cmd = my_strtok_word(paylord))){
             word = my_strtok_word(NULL);
-            if (my_strcmp(cmd, "search") == 0) search(oInvertedIndex, word, connfd);
-            else fprintf(Stderr, "Command unkown: %s\n", cmd);
+            if (my_strcmp(cmd, "search") == 0) {
+                struct ValueNode* result;
+                while((result = InvertedIndex_iterKey(oInvertedIndex, word))){
+                    char response[MAXLINE];
+                    int response_length = MAXLINE;
+                    int response_type = 0x11;
+                    sprintf(response, "%d %x %s: line #%d\n", &response_length, &response_type, result->name, result->line);
+                    rio_writen(connfd, response, MAXLINE);
+                }
+            }
+            else fprintf(stderr, "Command unkown: %s\n", cmd);
         }
         Rio_readlineb(&rio, buf, MAXLINE);
     }
@@ -122,36 +117,53 @@ void run_cli(int connfd)
 }
 
 
-int main(int argc, int *argv[]){
+void* thread_start(void* arg)
+{
+    int connfd;
+    pthread_mutex_lock(&mutex_task);
+    while(num_task == 0){
+        pthread_cond_wait(&cond_task, &mutex_task);
+    }
+    connfd = pop_task_node();
+    pthread_mutex_unlock(&mutex_task);
+    /*
+    * Execute server io function. 
+    */
+    run_cli(connfd);
+    return NULL;
+}
+
+
+int main(int argc, char *argv[]){
     if (argc != 3){
         fprintf(stderr, "Usage = %s <target directory> <port>\n", argv[0]);
         return 1;
     }
     oInvertedIndex = bootstrap(argv[0], argv[1]);
-    pthread_mutex_init(&mutex_task);
-    pthread_cond_init(&cond_task);
+    pthread_mutex_init(&mutex_task, NULL);
+    pthread_cond_init(&cond_task, NULL);
 
 
     // Listening Thread
     int* listenfd = (int *)malloc(sizeof(int));
-    pthraed_t listen_tid;
+    pthread_t listen_tid;
     *listenfd = Open_listenfd(argv[2]);
     Pthread_create(&listen_tid, NULL, listen_start, (void*)listenfd);
 
 
     // Task Processing Threads
     for (int i = 0; i < num_thread; i++){
-        if (pthread_create(&threads[i], NULL, &thread_Start, NULL) != 0){
+        if (pthread_create(&threads[i], NULL, &thread_start, NULL) != 0){
             perror("Failed to create the thread\n");
         }
     }
 
-    if (pthread_join(&listen_tid, NULL) != 0){
+    if (pthread_join(listen_tid, NULL) != 0){
         perror("Failed to join listening thread");
     }
 
     for (int i = 0; i < num_thread; i++){
-        if (pthread_join(&threads[i], NULL) != 0){
+        if (pthread_join(threads[i], NULL) != 0){
             perror("Failed to join the thread\n");
         }
     }

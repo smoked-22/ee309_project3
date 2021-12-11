@@ -119,14 +119,14 @@ void cli(InvertedIndex_T oInvertedIndex, char* prog){
     }
 }
 
-int main(int argc, char* argv[]){
-    InvertedIndex_T oInvertedIndex;
+// int main(int argc, char* argv[]){
+//     InvertedIndex_T oInvertedIndex;
 
-    if(argc != 2){
-        fprintf(stderr, "usage: %s <target-directory>\n", argv[0]);
-        return 1;
-    }
-    oInvertedIndex = bootstrap(argv[0], argv[1]);
-    cli(oInvertedIndex, argv[0]);
-    InvertedIndex_free(oInvertedIndex);
-}
+//     if(argc != 2){
+//         fprintf(stderr, "usage: %s <target-directory>\n", argv[0]);
+//         return 1;
+//     }
+//     oInvertedIndex = bootstrap(argv[0], argv[1]);
+//     cli(oInvertedIndex, argv[0]);
+//     InvertedIndex_free(oInvertedIndex);
+// }
