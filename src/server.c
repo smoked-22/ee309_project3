@@ -109,13 +109,16 @@ void run_cli(int connfd)
     rio_t rio;
     Rio_readinitb(&rio, connfd);
     Rio_readlineb(&rio, buf, MAXLINE);
-    
-    sscanf(buf, "%d %x %s", total_length, msg_type, paylord);
-    if ((cmd = my_strtok_word(line))){
-        word = my_strtok_word(NULL);
-        if (my_strcmp(cmd, "search") == 0) search(oInvertedIndex, word, connfd);
-        else fprintf(Stderr, "Command unkown: %s\n", cmd);
+    while(my_strlen(&buf[0])){
+        sscanf(buf, "%d %x %s", total_length, msg_type, paylord);
+        if ((cmd = my_strtok_word(line))){
+            word = my_strtok_word(NULL);
+            if (my_strcmp(cmd, "search") == 0) search(oInvertedIndex, word, connfd);
+            else fprintf(Stderr, "Command unkown: %s\n", cmd);
+        }
+        Rio_readlineb(&rio, buf, MAXLINE);
     }
+    Close(connfd);
 }
 
 
