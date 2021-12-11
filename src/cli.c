@@ -91,42 +91,45 @@ InvertedIndex_T bootstrap(char* prog, char* path){
     return oInvertedIndex;
 }
 
-void search(InvertedIndex_T oInvertedIndex, char* keyword){
+void search(InvertedIndex_T oInvertedIndex, char* keyword, int connfd){
     struct ValueNode* result;
 
     if(!keyword) fprintf(stderr, "need keyword\n");
     else{
-        while((result = InvertedIndex_iterKey(oInvertedIndex, keyword)))
-            printf("%s: line #%d\n", result->name, result->line);
-    }
-}
-
-void cli(InvertedIndex_T oInvertedIndex, char* prog){
-    char line[MAX_LINE_SIZE];
-    char* cmd;
-    char* arg1;
-
-
-    printf("%s> ", prog);
-    while(readlinefrom(stdin, line)){
-        if((cmd = my_strtok_word(line))){
-            arg1 = my_strtok_word(NULL);
-            if(my_strcmp(cmd, "search") == 0) search(oInvertedIndex, arg1);
-            else if(my_strcmp(cmd, "exit") == 0) break;
-            else fprintf(stderr, "Command unknown: %s\n", cmd);
+        while((result = InvertedIndex_iterKey(oInvertedIndex, keyword))){
+            char response[MAXLINE]
+            sprintf(response, "%d %x %s: line #%d\n", MAXLINE, 0x11, result->name, result->line);
+            rio_writen(connfd, response, MAXLINE);
         }
-        printf("%s> ", prog);
     }
 }
 
-int main(int argc, char* argv[]){
-    InvertedIndex_T oInvertedIndex;
+// void cli(InvertedIndex_T oInvertedIndex, char* prog){
+//     char line[MAX_LINE_SIZE];
+//     char* cmd;
+//     char* arg1;
 
-    if(argc != 2){
-        fprintf(stderr, "usage: %s <target-directory>\n", argv[0]);
-        return 1;
-    }
-    oInvertedIndex = bootstrap(argv[0], argv[1]);
-    cli(oInvertedIndex, argv[0]);
-    InvertedIndex_free(oInvertedIndex);
-}
+
+//     printf("%s> ", prog);
+//     while(readlinefrom(stdin, line)){
+//         if((cmd = my_strtok_word(line))){
+//             arg1 = my_strtok_word(NULL);
+//             if(my_strcmp(cmd, "search") == 0) search(oInvertedIndex, arg1);
+//             else if(my_strcmp(cmd, "exit") == 0) break;
+//             else fprintf(stderr, "Command unknown: %s\n", cmd);
+//         }
+//         printf("%s> ", prog);
+//     }
+// }
+
+// int main(int argc, char* argv[]){
+//     InvertedIndex_T oInvertedIndex;
+
+//     if(argc != 2){
+//         fprintf(stderr, "usage: %s <target-directory>\n", argv[0]);
+//         return 1;
+//     }
+//     oInvertedIndex = bootstrap(argv[0], argv[1]);
+//     cli(oInvertedIndex, argv[0]);
+//     InvertedIndex_free(oInvertedIndex);
+// }
