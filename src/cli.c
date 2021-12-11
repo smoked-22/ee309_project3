@@ -5,17 +5,7 @@
  * @brief   Main function of text search
  */
 
-#include "invidx.h"
-#include "util.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <assert.h>
-#include <ctype.h>
-#include <sys/stat.h>
-
-#define MAX_LINE_SIZE 200
+#include "cli.h"
 
 int readlinefrom(FILE* fp, char* line){
     int c;
